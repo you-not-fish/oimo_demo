@@ -33,19 +33,19 @@ void AgentMgr::handleReqLogin(Packle::sPtr packle) {
         return;
     }
     // 创建新的agent
-    auto& agent = 
+    auto agent = 
         APP::instance().newService<AgentService>(name + "_agent");
     auto player = std::make_shared<Player>();
     player->name = name;
-    player->agent = agent.id();
+    player->agent = agent;
     m_players[name] = player;
-    m_agents[agent.id()] = player;
+    m_agents[agent] = player;
     // 向新建立的agent发送player信息
     Packle::sPtr pack = std::make_shared<Packle>(
         (Packle::MsgID)MsgType::PlayerInfo
     );
     pack->userData = player;
-    send(agent.id(), pack);
+    send(agent, pack);
     LOG_INFO << "create agent for player: " << name;
     packle->userData = player->agent;
     setReturnPackle(packle);

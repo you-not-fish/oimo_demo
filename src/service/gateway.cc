@@ -5,7 +5,7 @@
 
 using namespace Oimo;
 
-const int kPingInterval = 30;
+const int GatewayService::kPingInterval = 30;
 
 void GatewayService::init(Packle::sPtr packle) {
     // 注册消息处理
