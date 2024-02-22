@@ -11,5 +11,6 @@ public:
 private:
     void handlePlayerInfo(Packle::sPtr packle);
     void handleKick(Packle::sPtr packle);
+    uint32_t m_room;
     std::shared_ptr<Player> m_player;
 };

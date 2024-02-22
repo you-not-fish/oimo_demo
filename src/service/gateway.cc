@@ -5,6 +5,8 @@
 
 using namespace Oimo;
 
+const int kPingInterval = 30;
+
 void GatewayService::init(Packle::sPtr packle) {
     // 注册消息处理
     registerFunc(toInt(MsgType::UpdateAgent),
@@ -29,6 +31,13 @@ void GatewayService::onConnect(Net::Connection::sPtr conn) {
     state->conn = conn;
     state->lastPingTime = time(nullptr);
     state->agent = 0;
+    // 添加定时器， 每隔90s检查一次心跳
+    state->timeID = addTimer(0, kPingInterval * 3, [this, state] {
+        if (time(nullptr) - state->lastPingTime > kPingInterval * 3) {
+            LOG_INFO << "client timeout, fd: " << state->conn->fd();
+            close(state);
+        }
+    });
     m_clients[conn->fd()] = state;
     // 开始接受数据
     conn->start();
@@ -131,6 +140,7 @@ void GatewayService::handleUpdaeAgent(Packle::sPtr packle) {
     auto agent = std::any_cast<uint32_t>(packle->userData);
     auto state = m_clients[packle->fd()];
     state->agent = agent;
+    // agent为0，可能是被踢下线
     if (agent == 0) {
         // 向客户端发送MsgKick消息
         Packle::sPtr pack = std::make_shared<Packle>(
@@ -147,10 +157,12 @@ void GatewayService::handleUpdaeAgent(Packle::sPtr packle) {
 }
 
 void GatewayService::close(ClientState::sPtr state) {
+    // 删除定时器
+    removeTimer(state->timeID);
     auto conn = state->conn;
     m_clients.erase(conn->fd());
+    // 如果agent存在，通知AgentMgr服务
     if (state->agent != 0) {
-        // 通知AgentMgr服务
         Packle::sPtr pack = std::make_shared<Packle>(
             toInt(MsgType::ReqKick)
         );

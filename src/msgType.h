@@ -9,15 +9,20 @@ enum class MsgType {
     MsgRegister,
     MsgLogin,
     MsgKick,
+    MsgStartBattle,
     MsgUnkown,
 
-    // 系统消息
+    // 系统内部消息
     Resp,
     UpdateAgent,
     ReqLogin,
     ReqKick,
     PlayerInfo,
-    Kick
+    Kick,
+    AddPlayer,
+    RemovePlayer,
+    StartBattle,
+    RemoveRoom,
 };
 
 inline MsgType toMsgType(int i) {

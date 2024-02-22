@@ -20,7 +20,7 @@ private:
     void handleResp(Packle::sPtr packle);
     void handleUpdaeAgent(Packle::sPtr packle);
     void close(ClientState::sPtr state);
-    static const int kPingInterval = 30;
+    static const int kPingInterval;
     std::map<int, ClientState::sPtr> m_clients;
     Net::TcpServer m_server;
 };
