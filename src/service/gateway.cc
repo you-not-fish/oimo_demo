@@ -1,10 +1,18 @@
 #include <log.h>
 #include <msgType.h>
+#include <JSONUtils.h>
 #include "gateway.h"
 
 using namespace Oimo;
 
 void GatewayService::init(Packle::sPtr packle) {
+    // 注册消息处理
+    registerFunc(toInt(MsgType::UpdateAgent),
+        std::bind(&GatewayService::handleUpdaeAgent, this, std::placeholders::_1)
+    );
+    registerFunc(toInt(MsgType::Resp),
+        std::bind(&GatewayService::handleResp, this, std::placeholders::_1)
+    );
     // 初始化tcp服务
     m_server.init(this);
     // 创建socket并绑定监听
@@ -26,6 +34,7 @@ void GatewayService::onConnect(Net::Connection::sPtr conn) {
     conn->start();
     char lens[4];
     char type[MAX_TYPE_LENGTH];
+    char body[MAX_MSG_LENGTH];
     int msgLen, typeLen, bodyLen;
     while (!conn->isClosing()) {
         // 消息长度（2字节）+ 类型长度（2字节）+ 类型 + 数据
@@ -45,30 +54,16 @@ void GatewayService::onConnect(Net::Connection::sPtr conn) {
         }
         LOG_DEBUG << "type: " << std::string(type, typeLen);
         // 读取消息体
-        char* body = new char[bodyLen + 1];
         if (conn->recvN(body, bodyLen) != bodyLen) {
-            delete[] body;
             break;
         }
         body[bodyLen] = '\0';
         LOG_DEBUG << "body: " << body;
-        // 将消息打包成packle
-        Packle::sPtr packle = std::make_shared<Packle>(
-            (Packle::MsgID)toMsgType(type, typeLen)
-        );
-        packle->setSize(bodyLen);
-        packle->setBuf(body);
-        packle->setFd(conn->fd());
-        // 将packle发送到logic服务或者agent服务
-        sendToService(packle, state->agent);
-        // 不用手动释放body的内存，packle在销毁时会自动释放
+        // 处理消息
+        handleMsg(body, state);
     }
-    // 连接断开
-    m_clients.erase(conn->fd());
-    if (!conn->isClosing()) {
-        // 关闭连接
-        conn->close();
-    }
+    // 关闭连接
+    close(state);
 }
 
 bool GatewayService::checkLens(int msgLen, int typeLen) {
@@ -85,18 +80,82 @@ bool GatewayService::checkLens(int msgLen, int typeLen) {
     return true;
 }
 
-void GatewayService::sendToService(Packle::sPtr packle, uint32_t agent) {
+void GatewayService::handleMsg(const char * buf, ClientState::sPtr state) {
+    auto conn = state->conn;
+    // 反序列化
+    Json::Value root;
+    if (!JSONUtils::parse(buf, root)) {
+        LOG_ERROR << "parse json failed. fd: " << conn->fd();
+        close(state);
+        return;
+    }
+    // 心跳包
+    std::string protoName = root["protoName"].asString();
+    if (protoName == "MsgPing") {
+        state->lastPingTime = time(nullptr);
+        return;
+    }
+    // 打包成Packle
+    auto packle = std::make_shared<Packle>();
+    packle->setFd(conn->fd());
+    packle->setType(
+        static_cast<Packle::MsgID>(toMsgType(protoName))
+    );
+    packle->userData = root;
+    // 转发到其他服务
+    forward(packle, state->agent);
+}
+
+void GatewayService::forward(Packle::sPtr packle, uint32_t agent) {
     if (agent == 0) {
         // 尚未登陆，发送到logic服务
-        call("login", packle);
-        // 得到响应结果
-        auto resp = responsePackle();
-        // 将结果发送给客户端
-        auto conn = m_clients[packle->fd()]->conn;
-        conn->send(packle);
+        send("login", packle);
     } else {
         // 发送到agent服务
         send(agent, packle);
     }
+}
     
+void GatewayService::handleResp(Packle::sPtr packle) {
+    auto node = std::any_cast<Json::Value>(packle->userData);
+    auto conn = m_clients[packle->fd()]->conn;
+    // 序列化
+    int len;
+    char *bytes = JSONUtils::serialize(node, len);
+    packle->getAndResetBuf(bytes, len);
+    // 发送
+    conn->send(packle);
+}
+
+void GatewayService::handleUpdaeAgent(Packle::sPtr packle) {
+    auto agent = std::any_cast<uint32_t>(packle->userData);
+    auto state = m_clients[packle->fd()];
+    state->agent = agent;
+    if (agent == 0) {
+        // 向客户端发送MsgKick消息
+        Packle::sPtr pack = std::make_shared<Packle>(
+            toInt(MsgType::MsgKick)
+        );
+        Json::Value node;
+        node["protoName"] = "MsgKick";
+        node["reason"] = 0;
+        pack->userData = node;
+        pack->setFd(state->conn->fd());
+        handleResp(pack);
+    }
+    setReturnPackle(packle);
+}
+
+void GatewayService::close(ClientState::sPtr state) {
+    auto conn = state->conn;
+    m_clients.erase(conn->fd());
+    if (state->agent != 0) {
+        // 通知AgentMgr服务
+        Packle::sPtr pack = std::make_shared<Packle>(
+            toInt(MsgType::ReqKick)
+        );
+        pack->userData = state->agent;
+        call("AgentMgr", pack);
+    }
+    conn->close();
 }

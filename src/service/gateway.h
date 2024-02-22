@@ -15,7 +15,12 @@ public:
 private:
     void onConnect(Net::Connection::sPtr conn);
     bool checkLens(int msgLen, int typeLen);
-    void sendToService(Packle::sPtr packle, uint32_t agent);
+    void forward(Packle::sPtr packle, uint32_t agent);
+    void handleMsg(const char *msg, ClientState::sPtr state);
+    void handleResp(Packle::sPtr packle);
+    void handleUpdaeAgent(Packle::sPtr packle);
+    void close(ClientState::sPtr state);
+    static const int kPingInterval = 30;
     std::map<int, ClientState::sPtr> m_clients;
     Net::TcpServer m_server;
 };
