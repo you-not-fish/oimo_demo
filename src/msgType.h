@@ -27,6 +27,7 @@ enum class MsgType {
     Kick,
     AddPlayer,
     RemovePlayer,
+    GetRoomInfo,
     StartBattle,
     CreateRoom,
     RemoveRoom,

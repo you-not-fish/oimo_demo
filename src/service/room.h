@@ -22,6 +22,7 @@ private:
     void handleRemovePlayer(Packle::sPtr packle);
     void handleStartBattle(Packle::sPtr packle);
     void handleReqRoomInfo(Packle::sPtr packle);
+    void handleGetRoomInfo(Packle::sPtr packle);
     int switchCamp();
     std::string switchOwner();
     void broadcast(Json::Value node);

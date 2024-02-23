@@ -126,6 +126,8 @@ void RoomService::handleRemovePlayer(Packle::sPtr packle) {
 		// 广播
 		broadcast(roomInfo());
 	} while (0);
+	packle->userData = result;
+	setReturnPackle(packle);
 }
 
 void RoomService::handleReqRoomInfo(Packle::sPtr packle) {
@@ -137,9 +139,22 @@ void RoomService::handleReqRoomInfo(Packle::sPtr packle) {
 	setReturnPackle(packle);
 }
 
+void RoomService::handleGetRoomInfo(Packle::sPtr packle) {
+	packle->userData = roomInfo();
+	setReturnPackle(packle);
+}
+
 void RoomService::handleStartBattle(Packle::sPtr packle) {
+	auto name = std::any_cast<std::string>(packle->userData);
+	if (name != m_ownerID) {
+		packle->userData = false;
+		setReturnPackle(packle);
+		return;
+	}
 	if (!canStartBattle()) {
-		LOG_WARN << "can't start battle! room id: " << m_id;
+		LOG_INFO << "can't start battle! room id: " << m_id;
+		packle->userData = false;
+		setReturnPackle(packle);
 		return;
 	}
 	m_status = RoomStatus::Fighting;
@@ -147,6 +162,8 @@ void RoomService::handleStartBattle(Packle::sPtr packle) {
 	// 每10s检查一次游戏是否结束
 	m_timeID = addTimer(1000, 10000, std::bind(&RoomService::update, this));
 	broadcast(startInfo());
+	packle->userData = true;
+	setReturnPackle(packle);
 }
 
 int RoomService::switchCamp() {
