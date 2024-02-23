@@ -9,6 +9,12 @@ enum class MsgType {
     MsgRegister,
     MsgLogin,
     MsgKick,
+    MsgGetAchieve,
+    MsgGetRoomList,
+    MsgGetRoomInfo,
+    MsgCreateRoom,
+    MsgEnterRoom,
+    MsgLeaveRoom,
     MsgStartBattle,
     MsgUnkown,
 
@@ -22,7 +28,11 @@ enum class MsgType {
     AddPlayer,
     RemovePlayer,
     StartBattle,
+    CreateRoom,
     RemoveRoom,
+    GetRoom,
+    ReqRoomInfo,
+    GetRoomList,
 };
 
 inline MsgType toMsgType(int i) {

@@ -9,8 +9,16 @@ class AgentService : public Service {
 public:
     void init(Packle::sPtr packle) override;
 private:
+    void ret(Packle::sPtr packle);
     void handlePlayerInfo(Packle::sPtr packle);
     void handleKick(Packle::sPtr packle);
+    void handleMsgGetAchieve(Packle::sPtr packle);
+    void handleMsgGetRoomList(Packle::sPtr packle);
+    void handleMsgCreateRoom(Packle::sPtr packle);
+    void handleMsgEnterRoom(Packle::sPtr packle);
+    void handleMsgGetRoomInfo(Packle::sPtr packle);
+    void handleMsgLeaveRoom(Packle::sPtr packle);
+    void handleStartBattle(Packle::sPtr packle);
     uint32_t m_room;
     std::shared_ptr<Player> m_player;
 };

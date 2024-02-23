@@ -45,6 +45,9 @@ void RoomService::init(Packle::sPtr packle) {
 	registerFunc((Packle::MsgID)MsgType::StartBattle,
 		std::bind(&RoomService::handleStartBattle, this, std::placeholders::_1)
 	);
+	registerFunc((Packle::MsgID)MsgType::ReqRoomInfo,
+		std::bind(&RoomService::handleReqRoomInfo, this, std::placeholders::_1)
+	);
 }
 
 void RoomService::handleAddPlayer(Packle::sPtr packle) {
@@ -123,6 +126,15 @@ void RoomService::handleRemovePlayer(Packle::sPtr packle) {
 		// 广播
 		broadcast(roomInfo());
 	} while (0);
+}
+
+void RoomService::handleReqRoomInfo(Packle::sPtr packle) {
+	Json::Value node;
+	node["id"] = m_id;
+	node["count"] = m_players.size();
+	node["status"] = (int)m_status;
+	packle->userData = node;
+	setReturnPackle(packle);
 }
 
 void RoomService::handleStartBattle(Packle::sPtr packle) {
