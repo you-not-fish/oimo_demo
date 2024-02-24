@@ -81,6 +81,7 @@ void RoomService::handleAddPlayer(Packle::sPtr packle) {
 		if (m_players.size() == 1) {
 			m_ownerID = playr->name;
 		}
+		LOG_DEBUG << "player " << playr->name << " join room " << m_id << "!";
 		// 广播
 		broadcast(roomInfo());
 	} while (0);

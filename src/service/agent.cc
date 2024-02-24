@@ -30,7 +30,9 @@ void AgentService::init(Packle::sPtr packle) {
 
 void AgentService::handlePlayerInfo(Packle::sPtr packle) {
     auto player = std::any_cast<std::shared_ptr<Player> >(packle->userData);
+    LOG_DEBUG << "player info: " << player->name;
     m_player = player;
+    setReturnPackle(packle);
 }
 
 void AgentService::handleKick(Packle::sPtr packle) {
@@ -90,11 +92,12 @@ void AgentService::handleMsgCreateRoom(Packle::sPtr packle) {
     );
     call("roommgr", pack);
     auto resp = responsePackle();
-    m_room = std::any_cast<int>(resp->userData);
+    m_room = std::any_cast<uint32_t>(resp->userData);
     // 加入房间
     pack->setType((Packle::MsgID)MsgType::AddPlayer);
     pack->userData = m_player;
     call(m_room, pack);
+    LOG_INFO << "create room " << m_room << " for player " << m_player->name;
     node["result"] = 0;
     packle->userData = node;
     ret(packle);

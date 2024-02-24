@@ -32,7 +32,7 @@ void GatewayService::onConnect(Net::Connection::sPtr conn) {
     state->lastPingTime = time(nullptr);
     state->agent = 0;
     // 添加定时器， 每隔90s检查一次心跳
-    state->timeID = addTimer(0, kPingInterval * 3, [this, state] {
+    state->timeID = addTimer(0, kPingInterval * 3000, [this, state] {
         if (time(nullptr) - state->lastPingTime > kPingInterval * 3) {
             LOG_INFO << "client timeout, fd: " << state->conn->fd();
             close(state);

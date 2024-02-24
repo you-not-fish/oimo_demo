@@ -7,11 +7,13 @@ include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}/include/
     ${CMAKE_CURRENT_SOURCE_DIR}/src/
 )
+enable_language(ASM)
 file(GLOB_RECURSE SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cc")
+file(GLOB_RECURSE ASMS "${CMAKE_CURRENT_SOURCE_DIR}/src/*.S")
 set(EXECUTABLE_OUTPUT_PATH ${CMAKE_CURRENT_SOURCE_DIR}/bin/)
-add_executable(oimo_demo ${SOURCES})
+add_executable(oimo_demo ${SOURCES} ${ASMS})
 target_link_libraries(oimo_demo 
-    ${CMAKE_CURRENT_SOURCE_DIR}/lib/liboimo.a
+    #${CMAKE_CURRENT_SOURCE_DIR}/lib/liboimo.a
     protobuf
     pthread
     yaml-cpp

@@ -45,7 +45,7 @@ void AgentMgr::handleReqLogin(Packle::sPtr packle) {
         (Packle::MsgID)MsgType::PlayerInfo
     );
     pack->userData = player;
-    send(agent, pack);
+    call(agent, pack);
     LOG_INFO << "create agent for player: " << name;
     packle->userData = player->agent;
     setReturnPackle(packle);
