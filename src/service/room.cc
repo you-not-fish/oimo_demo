@@ -48,6 +48,9 @@ void RoomService::init(Packle::sPtr packle) {
 	registerFunc((Packle::MsgID)MsgType::ReqRoomInfo,
 		std::bind(&RoomService::handleReqRoomInfo, this, std::placeholders::_1)
 	);
+	registerFunc((Packle::MsgID)MsgType::GetRoomInfo,
+		std::bind(&RoomService::handleGetRoomInfo, this, std::placeholders::_1)
+	);
 }
 
 void RoomService::handleAddPlayer(Packle::sPtr packle) {

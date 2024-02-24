@@ -82,6 +82,7 @@ namespace Net {
             LOG_ERROR << "accept error: " << ::strerror(errno);
             return 0;
         }
+        
         LOG_TRACE << "new connection from " << addr.ipAsString()
             << ":" << addr.portAsString();
         NetProto::NewConn newConn;

@@ -18,7 +18,7 @@ private:
     void handleMsgEnterRoom(Packle::sPtr packle);
     void handleMsgGetRoomInfo(Packle::sPtr packle);
     void handleMsgLeaveRoom(Packle::sPtr packle);
-    void handleStartBattle(Packle::sPtr packle);
+    void handleMsgStartBattle(Packle::sPtr packle);
     uint32_t m_room;
     std::shared_ptr<Player> m_player;
 };

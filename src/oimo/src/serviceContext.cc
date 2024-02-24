@@ -60,13 +60,14 @@ namespace Oimo {
     }
     
     void ServiceContext::dispatch(Packle::sPtr packle) {
+        auto session = packle->sessionID();
+        auto source = packle->source();
         if (packle->type() == (Packle::MsgID)SystemMsgID::TIMER) {
-            auto id = packle->sessionID();
-            if (id == 0) {
+            if (session == 0) {
                 LOG_ERROR << "Invalid timer packle";
                 return;
             }
-            auto it = m_timers.find(id);
+            auto it = m_timers.find(session);
             if (it != m_timers.end()) {
                 auto ctx = it->second;
                 // LOG_DEBUG << "ctx use_count: " << ctx.use_count() << ", timer use_count: " << ctx->timer.use_count() << ", dispatch timer";
@@ -87,15 +88,22 @@ namespace Oimo {
             return;
         }
         if (packle->isRet()) {
-            if (packle->sessionID() != 0) {
-                Coroutine::sPtr coroutine = getSuspendCoroutine(packle->sessionID());
+            if (session != 0) {
+                Coroutine::sPtr coroutine = getSuspendCoroutine(session);
                 if (coroutine) {
+                    packle->setIsRet(false);
                     m_responsePackle = packle;
                     coroutine->resume();
+                    source = coroutine->reservSrc();
                     m_responsePackle.reset();
                     if (coroutine->state() == Coroutine::CoroutineState::STOPPED) {
                         returnCoroutine(coroutine);
                     }
+                } else {
+                    auto ctx = ServiceContextMgr::getContext(packle->source());
+                    LOG_ERROR << "No coroutine in service " << name() << " for sessionID: " << packle->sessionID()
+                        << ", source: " << (ctx ? ctx->name() : "unknown")
+                        << ", type: " << packle->type();
                 }
             }
         } else {
@@ -105,17 +113,31 @@ namespace Oimo {
                 Coroutine::sPtr coroutine = getCoroutine(
                     std::bind(it->second, packle)
                 );
+                if (session != 0) {
+                    coroutine->setReservSid(session);
+                    coroutine->setReservSrc(source);
+                }
                 coroutine->resume();
+                source = coroutine->reservSrc();
                 if (coroutine->state() == Coroutine::CoroutineState::STOPPED) {
                     returnCoroutine(coroutine);
                 }
             } else {
+                auto ctx = ServiceContextMgr::getContext(packle->source());
+                std::string handlers;
+                for (auto& it : m_handlers) {
+                    handlers += toString((MsgType)it.first)
+                        + "(" + std::to_string(toInt((MsgType)it.first)) + "), ";
+                }
                 LOG_ERROR << "Service " << name() << " has no handler for messageID: "
-                    << toChars((MsgType)packle->type())
-                    << ", source: " << packle->source();
+                    << toString((MsgType)packle->type()) + "(" + std::to_string(toInt((MsgType)packle->type())) + ")"
+                    << ", source: " << (ctx ? ctx->name() : "unknown")
+                    << "Handlers: " << handlers;
             }
         }
-        ret(packle->source());
+        if (m_returnPackle){
+            ret(source);
+        }
     }
     
     Coroutine::sPtr ServiceContext::getCoroutine(const Coroutine::CoroutineFunc& func) {
@@ -132,6 +154,12 @@ namespace Oimo {
     void ServiceContext::returnCoroutine(Coroutine::sPtr coroutine) {
         assert(coroutine);
         t_freeQueue.push(coroutine);
+    }
+
+    void ServiceContext::setReturnPackle(Packle::sPtr packle) {
+        auto cor = Coroutine::currentCoroutine();
+        packle->setSessionID(cor->reservSid());
+        m_returnPackle = packle;
     }
 
     void ServiceContext::call(ServiceID dest, Packle::sPtr packle) {
@@ -159,6 +187,7 @@ namespace Oimo {
         auto coroutine = Coroutine::currentCoroutine();
         auto self = currentContext();
         auto sessionID = self->getSession();
+        // LOG_DEBUG << self->name() << " call " << dest->name() << ", sessionID: " << sessionID;
         packle->setSource(currentContext()->serviceID());
         packle->setSessionID(sessionID);
         dest->messageQueue()->push(packle);
@@ -193,11 +222,14 @@ namespace Oimo {
         dest->messageQueue()->push(packle);
     }
 
-    void ServiceContext::ret(ServiceID dest) {
-        if (!m_returnPackle) return;
+    void ServiceContext::ret(ServiceContext::ServiceID dest) {
         ServiceContext::sPtr context = ServiceContextMgr::getContext(dest);
         if (context) {
+            m_returnPackle->setType((Packle::MsgID)SystemMsgID::RET);
             m_returnPackle->setIsRet(true);
+            m_returnPackle->setSource(serviceID());
+            // LOG_DEBUG << name() << " ret " << context->name()
+            //     << ", sessionID: " << m_returnPackle->sessionID();
             context->messageQueue()->push(m_returnPackle);
         } else {
             LOG_ERROR << "No context for serviceID: " << dest;

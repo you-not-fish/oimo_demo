@@ -5,35 +5,35 @@
 
 enum class MsgType {
     // 客户端注册
-    MsgPing,
-    MsgRegister,
-    MsgLogin,
-    MsgKick,
-    MsgGetAchieve,
-    MsgGetRoomList,
-    MsgGetRoomInfo,
-    MsgCreateRoom,
-    MsgEnterRoom,
-    MsgLeaveRoom,
-    MsgStartBattle,
-    MsgUnkown,
+    MsgPing = 0,
+    MsgRegister = 1,
+    MsgLogin = 2,
+    MsgKick = 3,
+    MsgGetAchieve = 4,
+    MsgGetRoomList = 5,
+    MsgGetRoomInfo = 6,
+    MsgCreateRoom = 7,
+    MsgEnterRoom = 8,
+    MsgLeaveRoom = 9,
+    MsgStartBattle = 10,
+    MsgUnkown = 11,
 
     // 系统内部消息
-    Resp,
-    UpdateAgent,
-    ReqLogin,
-    ReqKick,
-    PlayerInfo,
-    Kick,
-    AddPlayer,
-    RemovePlayer,
-    GetRoomInfo,
-    StartBattle,
-    CreateRoom,
-    RemoveRoom,
-    GetRoom,
-    ReqRoomInfo,
-    GetRoomList,
+    Resp = 100,
+    UpdateAgent = 101,
+    ReqLogin = 102,
+    ReqKick = 103,
+    PlayerInfo = 104,
+    Kick = 105,
+    AddPlayer = 106,
+    RemovePlayer = 107,
+    GetRoomInfo = 108,
+    StartBattle = 109,
+    CreateRoom = 110,
+    RemoveRoom = 111,
+    GetRoom = 112,
+    ReqRoomInfo = 113,
+    GetRoomList = 114,
 };
 
 inline MsgType toMsgType(int i) {
@@ -54,19 +54,19 @@ inline MsgType toMsgType(const char* str, int len) {
         return MsgType::MsgLogin;
     } else if (len == 7 && strncmp(str, "MsgKick", 7) == 0) {
         return MsgType::MsgKick;
-    } else if (len == 12 && strncmp(str, "MsgGetAchieve", 12) == 0) {
+    } else if (len == 13 && strncmp(str, "MsgGetAchieve", 13) == 0) {
         return MsgType::MsgGetAchieve;
-    } else if (len == 13 && strncmp(str, "MsgGetRoomList", 13) == 0) {
+    } else if (len == 14 && strncmp(str, "MsgGetRoomList", 14) == 0) {
         return MsgType::MsgGetRoomList;
-    } else if (len == 13 && strncmp(str, "MsgGetRoomInfo", 13) == 0) {
+    } else if (len == 14 && strncmp(str, "MsgGetRoomInfo", 14) == 0) {
         return MsgType::MsgGetRoomInfo;
-    } else if (len == 12 && strncmp(str, "MsgCreateRoom", 12) == 0) {
+    } else if (len == 13 && strncmp(str, "MsgCreateRoom", 13) == 0) {
         return MsgType::MsgCreateRoom;
-    } else if (len == 11 && strncmp(str, "MsgEnterRoom", 11) == 0) {
+    } else if (len == 12 && strncmp(str, "MsgEnterRoom", 12) == 0) {
         return MsgType::MsgEnterRoom;
-    } else if (len == 11 && strncmp(str, "MsgLeaveRoom", 11) == 0) {
+    } else if (len == 12 && strncmp(str, "MsgLeaveRoom", 12) == 0) {
         return MsgType::MsgLeaveRoom;
-    } else if (len == 12 && strncmp(str, "MsgStartBattle", 12) == 0) {
+    } else if (len == 14 && strncmp(str, "MsgStartBattle", 14) == 0) {
         return MsgType::MsgStartBattle;
     } else if (len == 9 && strncmp(str, "MsgUnkown", 9) == 0) {
         return MsgType::MsgUnkown;

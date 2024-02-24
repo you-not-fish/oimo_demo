@@ -61,13 +61,13 @@ void GatewayService::onConnect(Net::Connection::sPtr conn) {
         if (conn->recvN(type, typeLen) != typeLen) {
             break;
         }
-        LOG_DEBUG << "type: " << std::string(type, typeLen);
+        // LOG_DEBUG << "type: " << std::string(type, typeLen);
         // 读取消息体
         if (conn->recvN(body, bodyLen) != bodyLen) {
             break;
         }
         body[bodyLen] = '\0';
-        LOG_DEBUG << "body: " << body;
+        // LOG_DEBUG << "body: " << body;
         // 处理消息
         handleMsg(body, state);
     }
@@ -110,6 +110,9 @@ void GatewayService::handleMsg(const char * buf, ClientState::sPtr state) {
     packle->setType(
         static_cast<Packle::MsgID>(toMsgType(protoName))
     );
+    LOG_DEBUG << "message from client, protoName : "
+        << protoName << "(" << packle->type() << ")"
+        << ", body : " << buf;
     packle->userData = root;
     // 转发到其他服务
     forward(packle, state->agent);
@@ -127,6 +130,17 @@ void GatewayService::forward(Packle::sPtr packle, uint32_t agent) {
     
 void GatewayService::handleResp(Packle::sPtr packle) {
     auto node = std::any_cast<Json::Value>(packle->userData);
+    LOG_DEBUG << "response to client, protoName : "
+        << node["protoName"].asString()
+        << ", body : " << JSONUtils::stringify(node);
+        int fd = packle->fd();
+        if (fd < 0) {
+            LOG_ERROR << "invalid fd: " << fd << ", protoName: "
+                << node["protoName"].asString() << ", body: "
+                << JSONUtils::stringify(node)
+                << ", packle source fd: " << packle->source();
+            return;
+        }
     auto conn = m_clients[packle->fd()]->conn;
     // 序列化
     int len;
@@ -167,7 +181,7 @@ void GatewayService::close(ClientState::sPtr state) {
             toInt(MsgType::ReqKick)
         );
         pack->userData = state->agent;
-        call("AgentMgr", pack);
+        call("agentmgr", pack);
     }
     conn->close();
 }

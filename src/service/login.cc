@@ -39,6 +39,7 @@ void LoginService::handleLogin(Packle::sPtr packle) {
         Packle::sPtr req = std::make_shared<Packle>(
             toInt(MsgType::ReqLogin)
         );
+        req->setFd(packle->fd());
         req->userData = node;
         call("agentmgr", req);
         auto resp = responsePackle();

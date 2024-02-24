@@ -11,6 +11,8 @@ void AgentMgr::init(Packle::sPtr packle) {
     // 注册消息处理函数
     registerFunc((Packle::MsgID)MsgType::ReqLogin,
         std::bind(&AgentMgr::handleReqLogin, this, std::placeholders::_1));
+    registerFunc((Packle::MsgID)MsgType::ReqKick,
+        std::bind(&AgentMgr::handleReqKick, this, std::placeholders::_1));
 }
 
 void AgentMgr::handleReqLogin(Packle::sPtr packle) {
@@ -26,7 +28,7 @@ void AgentMgr::handleReqLogin(Packle::sPtr packle) {
             (Packle::MsgID)MsgType::UpdateAgent
         );
         pack->setFd(player->fd);
-        pack->userData = 0;
+        pack->userData = (uint32_t)0;
         call("gateway", pack);
         m_players.erase(it);
         m_agents.erase(player->agent);
@@ -38,6 +40,7 @@ void AgentMgr::handleReqLogin(Packle::sPtr packle) {
     auto player = std::make_shared<Player>();
     player->name = name;
     player->agent = agent;
+    player->fd = packle->fd();
     m_players[name] = player;
     m_agents[agent] = player;
     // 向新建立的agent发送player信息

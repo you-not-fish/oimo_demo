@@ -23,8 +23,11 @@ void AgentService::init(Packle::sPtr packle) {
         std::bind(&AgentService::handleMsgGetRoomInfo, this, std::placeholders::_1));
     registerFunc((Packle::MsgID)MsgType::MsgLeaveRoom,
         std::bind(&AgentService::handleMsgLeaveRoom, this, std::placeholders::_1));
-    registerFunc((Packle::MsgID)MsgType::StartBattle,
-        std::bind(&AgentService::handleStartBattle, this, std::placeholders::_1));
+    registerFunc((Packle::MsgID)MsgType::MsgStartBattle,
+        std::bind(&AgentService::handleMsgStartBattle, this, std::placeholders::_1));
+    registerFunc((Packle::MsgID)MsgType::GetRoomInfo,
+        std::bind(&AgentService::handleMsgGetRoomInfo, this, std::placeholders::_1));
+    LOG_DEBUG << "agent service init";
 }
 
 
@@ -58,6 +61,7 @@ void AgentService::ret(Packle::sPtr packle) {
     packle->setType(
         (Packle::MsgID)MsgType::Resp
     );
+    packle->setIsRet(false);
     send("gateway", packle);
 }
 
@@ -75,7 +79,9 @@ void AgentService::handleMsgGetRoomList(Packle::sPtr packle) {
         (Packle::MsgID)MsgType::GetRoomList
     );
     call("roommgr", pack);
-    ret(responsePackle());
+    auto resp = responsePackle();
+    resp->setFd(packle->fd());
+    ret(resp);
 }
 
 void AgentService::handleMsgCreateRoom(Packle::sPtr packle) {
@@ -158,7 +164,9 @@ void AgentService::handleMsgGetRoomInfo(Packle::sPtr packle) {
     }
     packle->setType((Packle::MsgID)MsgType::GetRoomInfo);
     call(m_room, packle);
-    ret(responsePackle());
+    auto resp = responsePackle();
+    resp->setFd(packle->fd());
+    ret(resp);
 }
 
 void AgentService::handleMsgLeaveRoom(Packle::sPtr packle) {
@@ -181,7 +189,7 @@ void AgentService::handleMsgLeaveRoom(Packle::sPtr packle) {
     ret(packle);
 }
 
-void AgentService::handleStartBattle(Packle::sPtr packle) {
+void AgentService::handleMsgStartBattle(Packle::sPtr packle) {
     auto node = std::any_cast<Json::Value>(packle->userData);
     if (m_room == 0) {
         LOG_ERROR << "can't find room service! room id: " << m_player->roomId;

@@ -27,7 +27,7 @@ namespace Oimo {
             Packle::sPtr packle = std::make_shared<Packle>((Packle::MsgID)SystemMsgID::INIT);
             packle->userData = args;
             ServiceContext::send(context, packle);
-            LOG_INFO << "Service: " << name << " created";
+            LOG_INFO << "Service: " << name << " launched. ID: " << service->id();
             return service->id();
         }
         Service::sPtr getService(ServiceID id) const;
