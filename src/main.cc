@@ -9,7 +9,7 @@ using namespace Oimo;
 int main(int argc, char** argv) {
     auto& app = APP::instance();
     app.init();
-    Logger::setLogLevel(LogLevel::DEBUG);
+    // Logger::setLogLevel(LogLevel::DEBUG);
     app.newService<RoomMgr>("roommgr");
     app.newService<AgentMgr>("agentmgr");
     app.newService<LoginService>("login");

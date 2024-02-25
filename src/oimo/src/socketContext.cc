@@ -105,7 +105,8 @@ namespace Net {
                 if (errno == EINTR) {
                     continue;
                 }
-                LOG_ERROR << "read error: " << ::strerror(errno);
+                std::string err = ::strerror(errno);
+                LOG_ERROR << "read error: " << err; //::strerror(errno);
                 return -1;
             }
             break;

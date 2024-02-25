@@ -25,9 +25,12 @@ void AgentService::init(Packle::sPtr packle) {
         std::bind(&AgentService::handleMsgLeaveRoom, this, std::placeholders::_1));
     registerFunc((Packle::MsgID)MsgType::MsgStartBattle,
         std::bind(&AgentService::handleMsgStartBattle, this, std::placeholders::_1));
-    registerFunc((Packle::MsgID)MsgType::GetRoomInfo,
-        std::bind(&AgentService::handleMsgGetRoomInfo, this, std::placeholders::_1));
-    LOG_DEBUG << "agent service init";
+    registerFunc((Packle::MsgID)MsgType::MsgSyncTank,
+        std::bind(&AgentService::handleMsgSyncTank, this, std::placeholders::_1));
+    registerFunc((Packle::MsgID)MsgType::MsgFire,
+        std::bind(&AgentService::handleMsgFire, this, std::placeholders::_1));
+    registerFunc((Packle::MsgID)MsgType::MsgHit,
+        std::bind(&AgentService::handleMsgHit, this, std::placeholders::_1));
 }
 
 
@@ -125,7 +128,7 @@ void AgentService::handleMsgEnterRoom(Packle::sPtr packle) {
     pack->userData = node["id"].asInt();
     call("roommgr", pack);
     auto resp = responsePackle();
-    m_room = std::any_cast<int>(resp->userData);
+    m_room = std::any_cast<uint32_t>(resp->userData);
     // 如果房间不存在
     if (m_room == 0) {
         LOG_ERROR << "can't find room service! room id: " << node["id"].asInt();
@@ -214,4 +217,41 @@ void AgentService::handleMsgStartBattle(Packle::sPtr packle) {
     node["result"] = 0;
     packle->userData = node;
     ret(packle);
+}
+
+void AgentService::handleMsgSyncTank(Packle::sPtr packle) {
+    if (m_room == 0) {
+        return;
+    }
+    auto node = std::any_cast<Json::Value>(packle->userData);
+    node["id"] = m_player->name;
+    packle->userData = node;
+    packle->setType((Packle::MsgID)MsgType::SyncTank);
+    send(m_room, packle);
+}
+
+void AgentService::handleMsgFire(Packle::sPtr packle) {
+    if (m_room == 0) {
+        LOG_ERROR << "can't find room service! room id: " << m_player->roomId;
+        return;
+    }
+    auto node = std::any_cast<Json::Value>(packle->userData);
+    node["id"] = m_player->name;
+    packle->userData = node;
+    packle->setType((Packle::MsgID)MsgType::Fire);
+    send(m_room, packle);
+}
+
+void AgentService::handleMsgHit(Packle::sPtr packle) {
+    if (m_room == 0) {
+        LOG_ERROR << "can't find room service! room id: " << m_player->roomId;
+        return;
+    }
+    auto node = std::any_cast<Json::Value>(packle->userData);
+    if (node["id"].asString() != m_player->name) {
+        LOG_ERROR << "check hit failed! player id: " << node["id"].asString() << ", self id: " << m_player->name;
+        return;
+    }
+    packle->setType((Packle::MsgID)MsgType::Hit);
+    send(m_room, packle);
 }

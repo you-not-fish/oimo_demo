@@ -1,6 +1,7 @@
 #include "room.h"
 #include <msgType.h>
 #include <log.h>
+#include <cmath>
 #include <player.h>
 
 using namespace Oimo;
@@ -50,6 +51,15 @@ void RoomService::init(Packle::sPtr packle) {
 	);
 	registerFunc((Packle::MsgID)MsgType::GetRoomInfo,
 		std::bind(&RoomService::handleGetRoomInfo, this, std::placeholders::_1)
+	);
+	registerFunc((Packle::MsgID)MsgType::SyncTank,
+		std::bind(&RoomService::handleSyncTank, this, std::placeholders::_1)
+	);
+	registerFunc((Packle::MsgID)MsgType::Fire,
+		std::bind(&RoomService::handleFire, this, std::placeholders::_1)
+	);
+	registerFunc((Packle::MsgID)MsgType::Hit,
+		std::bind(&RoomService::handleHit, this, std::placeholders::_1)
 	);
 }
 
@@ -148,6 +158,76 @@ void RoomService::handleGetRoomInfo(Packle::sPtr packle) {
 	setReturnPackle(packle);
 }
 
+void RoomService::handleSyncTank(Packle::sPtr packle) {
+	auto node = std::any_cast<Json::Value>(packle->userData);
+	if (m_status != RoomStatus::Fighting) {
+		LOG_WARN << "can't sync tank! room id: " << m_id;
+		return;
+	}
+	auto name = node["id"].asString();
+	auto it = m_players.find(name);
+	if (it == m_players.end()) {
+		LOG_WARN << "can't find player " << name << " in room " << m_id;
+		return;
+	}
+	auto player = it->second;
+	// 检查作弊
+	if (std::abs(player->x - node["x"].asFloat()) > 5.0f ||
+		std::abs(player->y - node["y"].asFloat()) > 5.0f ||
+		std::abs(player->z - node["z"].asFloat()) > 5.0f) {
+		LOG_INFO << "player " << name << " is cheating!";
+	}
+	player->x = node["x"].asFloat();
+	player->y = node["y"].asFloat();
+	player->z = node["z"].asFloat();
+	player->ex = node["ex"].asFloat();
+	player->ey = node["ey"].asFloat();
+	player->ez = node["ez"].asFloat();
+	broadcast(node);
+}
+
+void RoomService::handleFire(Packle::sPtr packle) {
+	auto node = std::any_cast<Json::Value>(packle->userData);
+	if (m_status != RoomStatus::Fighting) {
+		LOG_WARN << "can't fire! room id: " << m_id;
+		return;
+	}
+	auto name = node["id"].asString();
+	auto it = m_players.find(name);
+	if (it == m_players.end()) {
+		LOG_WARN << "can't find player " << name << " in room " << m_id;
+		return;
+	}
+	broadcast(node);
+}
+
+void RoomService::handleHit(Packle::sPtr packle) {
+	auto node = std::any_cast<Json::Value>(packle->userData);
+	if (m_status != RoomStatus::Fighting) {
+		LOG_WARN << "can't hit! room id: " << m_id;
+		return;
+	}
+	auto name = node["id"].asString();
+	auto it = m_players.find(name);
+	if (it == m_players.end()) {
+		LOG_WARN << "can't find player " << name << " in room " << m_id;
+		return;
+	}
+	auto player = it->second;
+	it = m_players.find(node["targetId"].asString());
+	if (it == m_players.end()) {
+		LOG_WARN << "can't find target player " << node["targetId"].asString() << " in room " << m_id;
+		return;
+	}
+	auto target = it->second;
+	int dmg = 22;
+	target->hp -= dmg;
+	node["damage"] = dmg;
+	node["hp"] = player->hp;
+	// LOG_INFO << "hit resp : " << JSONUtils::stringify(node);
+	broadcast(node);
+}
+
 void RoomService::handleStartBattle(Packle::sPtr packle) {
 	auto name = std::any_cast<std::string>(packle->userData);
 	if (name != m_ownerID) {
@@ -177,7 +257,7 @@ int RoomService::switchCamp() {
 		if (it.second->camp == 1) {
 			camp1++;
 		}
-		else {
+		else if (it.second->camp == 2) {
 			camp2++;
 		}
 	}

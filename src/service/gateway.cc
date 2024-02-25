@@ -41,14 +41,15 @@ void GatewayService::onConnect(Net::Connection::sPtr conn) {
     m_clients[conn->fd()] = state;
     // 开始接受数据
     conn->start();
-    char lens[4];
+    int fd = conn->fd();
+    uint8_t lens[4];
     char type[MAX_TYPE_LENGTH];
     char body[MAX_MSG_LENGTH];
     int msgLen, typeLen, bodyLen;
     while (!conn->isClosing()) {
         // 消息长度（2字节）+ 类型长度（2字节）+ 类型 + 数据
         // 读取消息长度和类型长度
-        if (conn->recvN(lens, 4) != 4) {
+        if (conn->recvN((char*)lens, 4) != 4) {
             break;
         }
         msgLen = (lens[1] << 8) | lens[0];
@@ -72,6 +73,7 @@ void GatewayService::onConnect(Net::Connection::sPtr conn) {
         handleMsg(body, state);
     }
     // 关闭连接
+    LOG_INFO << "client closed, fd: " << fd;
     close(state);
 }
 
@@ -101,7 +103,7 @@ void GatewayService::handleMsg(const char * buf, ClientState::sPtr state) {
     // 心跳包
     std::string protoName = root["protoName"].asString();
     if (protoName == "MsgPing") {
-        state->lastPingTime = time(nullptr);
+        handlePing(state);
         return;
     }
     // 打包成Packle
@@ -116,6 +118,18 @@ void GatewayService::handleMsg(const char * buf, ClientState::sPtr state) {
     packle->userData = root;
     // 转发到其他服务
     forward(packle, state->agent);
+}
+
+void GatewayService::handlePing(ClientState::sPtr state) {
+    state->lastPingTime = time(nullptr);
+    Json::Value node;
+    node["protoName"] = "MsgPong";
+    Packle::sPtr packle = std::make_shared<Packle>(
+        toInt(MsgType::Resp)
+    );
+    packle->userData = node;
+    packle->setFd(state->conn->fd());
+    handleResp(packle);
 }
 
 void GatewayService::forward(Packle::sPtr packle, uint32_t agent) {
@@ -133,15 +147,22 @@ void GatewayService::handleResp(Packle::sPtr packle) {
     LOG_DEBUG << "response to client, protoName : "
         << node["protoName"].asString()
         << ", body : " << JSONUtils::stringify(node);
-        int fd = packle->fd();
-        if (fd < 0) {
-            LOG_ERROR << "invalid fd: " << fd << ", protoName: "
-                << node["protoName"].asString() << ", body: "
-                << JSONUtils::stringify(node)
-                << ", packle source fd: " << packle->source();
-            return;
-        }
-    auto conn = m_clients[packle->fd()]->conn;
+    int fd = packle->fd();
+    if (fd < 0) {
+        LOG_ERROR << "invalid fd: " << fd << ", protoName: "
+            << node["protoName"].asString() << ", body: "
+            << JSONUtils::stringify(node)
+            << ", packle source fd: " << packle->source();
+        return;
+    }
+    auto state = m_clients[fd];
+    if (!state) {
+        LOG_INFO << "conn already closed, fd: " << fd
+            << ", protoName: " << node["protoName"].asString()
+            << ", body: " << JSONUtils::stringify(node);
+        return;
+    }
+    auto conn = state->conn;
     // 序列化
     int len;
     char *bytes = JSONUtils::serialize(node, len);

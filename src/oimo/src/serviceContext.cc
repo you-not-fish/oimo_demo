@@ -102,7 +102,8 @@ namespace Oimo {
                 } else {
                     auto ctx = ServiceContextMgr::getContext(packle->source());
                     LOG_ERROR << "No coroutine in service " << name() << " for sessionID: " << packle->sessionID()
-                        << ", source: " << (ctx ? ctx->name() : "unknown")
+                        << ", source: " << (ctx ? ctx->name() : "unknown") << "("
+                        << std::to_string(packle->source()) << ")"
                         << ", type: " << packle->type();
                 }
             }
@@ -187,7 +188,7 @@ namespace Oimo {
         auto coroutine = Coroutine::currentCoroutine();
         auto self = currentContext();
         auto sessionID = self->getSession();
-        // LOG_DEBUG << self->name() << " call " << dest->name() << ", sessionID: " << sessionID;
+        LOG_TRACE << self->name() << " call " << dest->name() << ", sessionID: " << sessionID;
         packle->setSource(currentContext()->serviceID());
         packle->setSessionID(sessionID);
         dest->messageQueue()->push(packle);
@@ -228,8 +229,8 @@ namespace Oimo {
             m_returnPackle->setType((Packle::MsgID)SystemMsgID::RET);
             m_returnPackle->setIsRet(true);
             m_returnPackle->setSource(serviceID());
-            // LOG_DEBUG << name() << " ret " << context->name()
-            //     << ", sessionID: " << m_returnPackle->sessionID();
+            LOG_TRACE << name() << " ret " << context->name()
+                << ", sessionID: " << m_returnPackle->sessionID();
             context->messageQueue()->push(m_returnPackle);
         } else {
             LOG_ERROR << "No context for serviceID: " << dest;

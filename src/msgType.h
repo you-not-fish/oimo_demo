@@ -16,7 +16,10 @@ enum class MsgType {
     MsgEnterRoom = 8,
     MsgLeaveRoom = 9,
     MsgStartBattle = 10,
-    MsgUnkown = 11,
+    MsgSyncTank = 11,
+    MsgFire = 12,
+    MsgHit = 13,
+    MsgUnkown = 14,
 
     // 系统内部消息
     Resp = 100,
@@ -34,6 +37,9 @@ enum class MsgType {
     GetRoom = 112,
     ReqRoomInfo = 113,
     GetRoomList = 114,
+    SyncTank = 115,
+    Fire = 116,
+    Hit = 117,
 };
 
 inline MsgType toMsgType(int i) {
@@ -46,121 +52,86 @@ inline int toInt(MsgType type) {
 }
 
 inline MsgType toMsgType(const char* str, int len) {
-    if (len == 7 && strncmp(str, "MsgPing", 7) == 0) {
-        return MsgType::MsgPing;
-    } else if (len == 10 && strncmp(str, "MsgRegister", 10) == 0) {
-        return MsgType::MsgRegister;
-    } else if (len == 8 && strncmp(str, "MsgLogin", 8) == 0) {
-        return MsgType::MsgLogin;
-    } else if (len == 7 && strncmp(str, "MsgKick", 7) == 0) {
-        return MsgType::MsgKick;
-    } else if (len == 13 && strncmp(str, "MsgGetAchieve", 13) == 0) {
-        return MsgType::MsgGetAchieve;
-    } else if (len == 14 && strncmp(str, "MsgGetRoomList", 14) == 0) {
-        return MsgType::MsgGetRoomList;
-    } else if (len == 14 && strncmp(str, "MsgGetRoomInfo", 14) == 0) {
-        return MsgType::MsgGetRoomInfo;
-    } else if (len == 13 && strncmp(str, "MsgCreateRoom", 13) == 0) {
-        return MsgType::MsgCreateRoom;
-    } else if (len == 12 && strncmp(str, "MsgEnterRoom", 12) == 0) {
-        return MsgType::MsgEnterRoom;
-    } else if (len == 12 && strncmp(str, "MsgLeaveRoom", 12) == 0) {
-        return MsgType::MsgLeaveRoom;
-    } else if (len == 14 && strncmp(str, "MsgStartBattle", 14) == 0) {
-        return MsgType::MsgStartBattle;
-    } else if (len == 9 && strncmp(str, "MsgUnkown", 9) == 0) {
-        return MsgType::MsgUnkown;
-    } else if (len == 4 && strncmp(str, "Resp", 4) == 0) {
-        return MsgType::Resp;
-    } else if (len == 11 && strncmp(str, "UpdateAgent", 11) == 0) {
-        return MsgType::UpdateAgent;
-    } else if (len == 8 && strncmp(str, "ReqLogin", 8) == 0) {
-        return MsgType::ReqLogin;
-    } else if (len == 7 && strncmp(str, "ReqKick", 7) == 0) {
-        return MsgType::ReqKick;
-    } else if (len == 10 && strncmp(str, "PlayerInfo", 10) == 0) {
-        return MsgType::PlayerInfo;
-    } else if (len == 4 && strncmp(str, "Kick", 4) == 0) {
-        return MsgType::Kick;
-    } else if (len == 9 && strncmp(str, "AddPlayer", 9) == 0) {
-        return MsgType::AddPlayer;
-    } else if (len == 11 && strncmp(str, "RemovePlayer", 11) == 0) {
-        return MsgType::RemovePlayer;
-    } else if (len == 11 && strncmp(str, "GetRoomInfo", 11) == 0) {
-        return MsgType::GetRoomInfo;
-    } else if (len == 11 && strncmp(str, "StartBattle", 11) == 0) {
-        return MsgType::StartBattle;
-    } else if (len == 11 && strncmp(str, "CreateRoom", 11) == 0) {
-        return MsgType::CreateRoom;
-    } else if (len == 11 && strncmp(str, "RemoveRoom", 11) == 0) {
-        return MsgType::RemoveRoom;
-    } else if (len == 8 && strncmp(str, "GetRoom", 8) == 0) {
-        return MsgType::GetRoom;
-    } else if (len == 10 && strncmp(str, "ReqRoomInfo", 10) == 0) {
-        return MsgType::ReqRoomInfo;
-    } else if (len == 11 && strncmp(str, "GetRoomList", 11) == 0) {
-        return MsgType::GetRoomList;
-    } else {
-        return MsgType::MsgUnkown;
-    }
+    #define TO_MSG_TYPE(msg, msglen) \
+        if (len == msglen && strncmp(str, #msg, msglen) == 0) { \
+            return MsgType::msg; \
+        }
+    TO_MSG_TYPE(MsgPing, 7);
+    TO_MSG_TYPE(MsgRegister, 11);
+    TO_MSG_TYPE(MsgLogin, 8);
+    TO_MSG_TYPE(MsgKick, 7);
+    TO_MSG_TYPE(MsgGetAchieve, 13);
+    TO_MSG_TYPE(MsgGetRoomList, 14);
+    TO_MSG_TYPE(MsgGetRoomInfo, 14);
+    TO_MSG_TYPE(MsgCreateRoom, 13);
+    TO_MSG_TYPE(MsgEnterRoom, 12);
+    TO_MSG_TYPE(MsgLeaveRoom, 12);
+    TO_MSG_TYPE(MsgStartBattle, 14);
+    TO_MSG_TYPE(MsgSyncTank, 11);
+    TO_MSG_TYPE(MsgFire, 7);
+    TO_MSG_TYPE(MsgHit, 6);
+    TO_MSG_TYPE(MsgUnkown, 9);
+    TO_MSG_TYPE(Resp, 4);
+    TO_MSG_TYPE(UpdateAgent, 11);
+    TO_MSG_TYPE(ReqLogin, 8);
+    TO_MSG_TYPE(ReqKick, 7);
+    TO_MSG_TYPE(PlayerInfo, 10);
+    TO_MSG_TYPE(Kick, 4);
+    TO_MSG_TYPE(AddPlayer, 9);
+    TO_MSG_TYPE(RemovePlayer, 12);
+    TO_MSG_TYPE(GetRoomInfo, 10);
+    TO_MSG_TYPE(StartBattle, 11);
+    TO_MSG_TYPE(CreateRoom, 10);
+    TO_MSG_TYPE(RemoveRoom, 10);
+    TO_MSG_TYPE(GetRoom, 7);
+    TO_MSG_TYPE(ReqRoomInfo, 11);
+    TO_MSG_TYPE(GetRoomList, 11);
+    TO_MSG_TYPE(SyncTank, 8);
+    TO_MSG_TYPE(Fire, 4);
+    TO_MSG_TYPE(Hit, 3);
+    #undef TO_MSG_TYPE
+    return MsgType::MsgUnkown;
 }
 
 inline const char* toChars(MsgType type) {
     switch (type) {
-    case MsgType::MsgPing:
-        return "MsgPing";
-    case MsgType::MsgRegister:
-        return "MsgRegister";
-    case MsgType::MsgLogin:
-        return "MsgLogin";
-    case MsgType::MsgKick:
-        return "MsgKick";
-    case MsgType::MsgGetAchieve:
-        return "MsgGetAchieve";
-    case MsgType::MsgGetRoomList:
-        return "MsgGetRoomList";
-    case MsgType::MsgGetRoomInfo:
-        return "MsgGetRoomInfo";
-    case MsgType::MsgCreateRoom:
-        return "MsgCreateRoom";
-    case MsgType::MsgEnterRoom:
-        return "MsgEnterRoom";
-    case MsgType::MsgLeaveRoom:
-        return "MsgLeaveRoom";
-    case MsgType::MsgStartBattle:
-        return "MsgStartBattle";
-    case MsgType::MsgUnkown:
-        return "MsgUnkown";
-    case MsgType::Resp:
-        return "Resp";
-    case MsgType::UpdateAgent:
-        return "UpdateAgent";
-    case MsgType::ReqLogin:
-        return "ReqLogin";
-    case MsgType::ReqKick:
-        return "ReqKick";
-    case MsgType::PlayerInfo:
-        return "PlayerInfo";
-    case MsgType::Kick:
-        return "Kick";
-    case MsgType::AddPlayer:
-        return "AddPlayer";
-    case MsgType::RemovePlayer:
-        return "RemovePlayer";
-    case MsgType::GetRoomInfo:
-        return "GetRoomInfo";
-    case MsgType::StartBattle:
-        return "StartBattle";
-    case MsgType::CreateRoom:
-        return "CreateRoom";
-    case MsgType::RemoveRoom:
-        return "RemoveRoom";
-    case MsgType::GetRoom:
-        return "GetRoom";
-    case MsgType::ReqRoomInfo:
-        return "ReqRoomInfo";
-    case MsgType::GetRoomList:
-        return "GetRoomList";
+        #define TO_CHARS(msg) \
+            case MsgType::msg: \
+                return #msg;
+        TO_CHARS(MsgPing);
+        TO_CHARS(MsgRegister);
+        TO_CHARS(MsgLogin);
+        TO_CHARS(MsgKick);
+        TO_CHARS(MsgGetAchieve);
+        TO_CHARS(MsgGetRoomList);
+        TO_CHARS(MsgGetRoomInfo);
+        TO_CHARS(MsgCreateRoom);
+        TO_CHARS(MsgEnterRoom);
+        TO_CHARS(MsgLeaveRoom);
+        TO_CHARS(MsgStartBattle);
+        TO_CHARS(MsgSyncTank);
+        TO_CHARS(MsgFire);
+        TO_CHARS(MsgHit);
+        TO_CHARS(MsgUnkown);
+        TO_CHARS(Resp);
+        TO_CHARS(UpdateAgent);
+        TO_CHARS(ReqLogin);
+        TO_CHARS(ReqKick);
+        TO_CHARS(PlayerInfo);
+        TO_CHARS(Kick);
+        TO_CHARS(AddPlayer);
+        TO_CHARS(RemovePlayer);
+        TO_CHARS(GetRoomInfo);
+        TO_CHARS(StartBattle);
+        TO_CHARS(CreateRoom);
+        TO_CHARS(RemoveRoom);
+        TO_CHARS(GetRoom);
+        TO_CHARS(ReqRoomInfo);
+        TO_CHARS(GetRoomList);
+        TO_CHARS(SyncTank);
+        TO_CHARS(Fire);
+        TO_CHARS(Hit);
+        #undef TO_CHARS
     default:
         return "Unkown";
     }

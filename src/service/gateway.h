@@ -7,7 +7,7 @@
 using namespace Oimo;
 
 #define MAX_TYPE_LENGTH 32
-#define MAX_MSG_LENGTH 1024
+#define MAX_MSG_LENGTH (1 << 16) - 1
 
 class GatewayService : public Service {
 public:
@@ -17,6 +17,7 @@ private:
     bool checkLens(int msgLen, int typeLen);
     void forward(Packle::sPtr packle, uint32_t agent);
     void handleMsg(const char *msg, ClientState::sPtr state);
+    void handlePing(ClientState::sPtr state);
     void handleResp(Packle::sPtr packle);
     void handleUpdaeAgent(Packle::sPtr packle);
     void close(ClientState::sPtr state);

@@ -23,6 +23,9 @@ private:
     void handleStartBattle(Packle::sPtr packle);
     void handleReqRoomInfo(Packle::sPtr packle);
     void handleGetRoomInfo(Packle::sPtr packle);
+    void handleSyncTank(Packle::sPtr packle);
+    void handleFire(Packle::sPtr packle);
+    void handleHit(Packle::sPtr packle);
     int switchCamp();
     std::string switchOwner();
     void broadcast(Json::Value node);

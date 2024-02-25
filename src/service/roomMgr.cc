@@ -42,7 +42,7 @@ void RoomMgr::handleGetRoom(Packle::sPtr packle) {
     if (it != m_rooms.end()) {
         packle->userData = it->second;
     } else {
-        packle->userData = 0;
+        packle->userData = (uint32_t)0;
     }
     setReturnPackle(packle);
 }
